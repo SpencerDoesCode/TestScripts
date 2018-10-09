@@ -15,8 +15,10 @@ my @names;
 my $Debug = 0;
 
 sub generate_name {
+	## Neede alphanumeric characters
 	my @chars = ('a'..'z', 'A'..'Z', 0..9);
 
+	## Generate random name
 	my $name = join '', map $chars[rand @chars], 0..7;
 
 	## Check to see if it has happened before, if so, redo
@@ -30,17 +32,20 @@ sub generate_name {
 }
 
 sub generate_stats  {
+	
 	my $stats = {
 	speed    => 25,
 	strength => 25,
 	agility  => 25,
 	};
 
+	## randomize each stat within a certain range. 25 + 8 = 33 x 3 = 99 < 100
 	foreach my $stat ( keys %$stats) {
 		my $modifier = int rand(8);
 		$stats->{$stat} += $modifier;
 	}
-	## grab total to check
+
+	## grab total of all stats to check for duplicate scores
 	my $total = eval join '+', values %$stats;
 
 	## Check to see if it has happened before, if so, redo
@@ -62,6 +67,7 @@ sub generate_league {
 
 	my @standbys;
 
+	## Player creation
 	foreach my $itr (1..15) {
 		my $name;
 		my $stats;
@@ -72,7 +78,7 @@ sub generate_league {
 		$stats = generate_stats();
 		$league->{Players}->{$itr}->{stats} = $stats;
 
-		##randomly assign starter/substitute status
+		## randomly assign starter/substitute status
 		my $status = int rand(2);
 
 		if (!$status && scalar @standbys < 5) {
@@ -82,6 +88,7 @@ sub generate_league {
 			$league->{Players}->{$itr}->{status} = "Starter";
 		}
 
+		## fair payment for all players
 		$league->{Players}->{$itr}->{salary} = sprintf("%.2f", 175/15);
 	}
 
@@ -95,15 +102,22 @@ sub test_roster_bots {
 	
 	my $league = generate_league();
 
-	## sub count test
+	## player count test
 	my $sub_count = 0;
+	my $starter_count = 0;
 	foreach my $Player (keys %{$league->{Players}}) {
 		$sub_count++ if $league->{Players}->{$Player}->{status} eq "Substitute";
+		$starter_count++ if $league->{Players}->{$Player}->{status} eq "Starter";
+
+		## name test
+		my $name = $league->{Players}->{$Player}->{name};
+		like($name, qr/^[a-zA-Z0-9]*$/, "$name is alphanumeric");
 	}
 
 	is($sub_count, 5, "We have 5 substitutes");
+	is($starter_count, 10, "We have 10 substitutes");
 
-	note Dumper $league;
+	note "The league is: \n" . Dumper $league;
 	## we are done testing
 	done_testing();
 }
